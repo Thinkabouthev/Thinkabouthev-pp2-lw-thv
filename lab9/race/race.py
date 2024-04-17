@@ -12,6 +12,10 @@ RED = (255, 0, 0)
 PURPLE = (191, 105, 245)
 
 SPEED = 5
+COIN_WEIGHTS = [1, 2, 3]  # Different weights for coins
+ENEMY_SPEED_INCREMENT = 20  # Increase in enemy speed after N coins collected
+COINS_FOR_SPEED_INCREASE = 5  # Number of coins needed to increase enemy speed
+ENEMY_INITIAL_SPEED = SPEED
 
 FPS = 60
 
@@ -76,16 +80,7 @@ class Enemy(Obstacle):
 class Coin(Obstacle):
     def __init__(self):
         super().__init__(20, 1, "images/coin.png", SPEED)
-
-
-class RareCoin(Obstacle):
-    def __init__(self):
-        super().__init__(20, 1, "images/rare_coin.png", SPEED)
-
-
-class LegendaryCoin(Obstacle):
-    def __init__(self):
-        super().__init__(20, 1, "images/legendary_coin.png", SPEED)
+        self.weight = random.choice(COIN_WEIGHTS)  # Assigning random weight to coin
 
 
 class Game:
@@ -115,6 +110,7 @@ class Game:
         self.scroll = 0
         self.coins = 0
         self.speed = SPEED
+        self.enemies_speed_increment_count = 0  # Counter for counting coins to increase enemy speed
 
     def drawCoinCounter(self):
         pygame.draw.rect(self.screen, PURPLE, (SCREEN_WIDTH - 70, 0, 70, 60), border_radius=15)
@@ -126,15 +122,7 @@ class Game:
     def createEntities(self):
         self.player = Player()
         self.enemy = Enemy()
-        
-        # Randomly generate coins based on probabilities
-        coin_type = random.choices(["normal", "rare", "legendary"], weights=[0.6, 0.3, 0.1])[0]
-        if coin_type == "normal":
-            self.coin = Coin()
-        elif coin_type == "rare":
-            self.coin = RareCoin()
-        elif coin_type == "legendary":
-            self.coin = LegendaryCoin()
+        self.coin = Coin()
 
     def drawEntities(self):
         self.player.draw(self.screen)
@@ -151,7 +139,11 @@ class Game:
 
         if self.player.rect.colliderect(self.coin.rect):
             self.coin.__init__()
-            self.coins += 1
+            self.coins += self.coin.weight  # Increase coins by coin's weight
+            self.enemies_speed_increment_count += self.coin.weight  # Increment counter for enemy speed increase
+            if self.enemies_speed_increment_count >= COINS_FOR_SPEED_INCREASE:
+                self.enemy.MOVEMENT_SPEED += ENEMY_SPEED_INCREMENT
+                self.enemies_speed_increment_count = 0  # Reset the counter after increasing enemy speed
 
         if self.enemy.rect.colliderect(self.coin.rect):
             self.coin.__init__()
